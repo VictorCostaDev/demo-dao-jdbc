@@ -1,9 +1,11 @@
 package model.dao.impl;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,8 +27,36 @@ public class SellerDaoJDBC implements SellerDao {
 
     @Override
     public void insert(Seller seller) {
-        // TODO Auto-generated method stub
-        
+        PreparedStatement pStatement = null;
+        try {
+            pStatement = conn.prepareStatement(
+                "INSERT INTO seller "
+                + "(Name, Email, BirthDate, BaseSalary, DepartmentId) "
+                + "VALUES (?, ?, ?, ?, ?)", 
+                Statement.RETURN_GENERATED_KEYS);
+            pStatement.setString(1, seller.getName());
+            pStatement.setString(2, seller.getEmail());
+            pStatement.setDate(3, new Date(seller.getBirthDate().getTime()));
+            pStatement.setDouble(4, seller.getBaseSalary());
+            pStatement.setInt(5, seller.getDepartment().getId());
+
+            int rowsAffected = pStatement.executeUpdate();
+
+            if(rowsAffected > 0) {
+                ResultSet resultSet = pStatement.getGeneratedKeys();
+                if (resultSet.next()) {
+                    int id = resultSet.getInt(1);
+                    seller.setId(id);
+                }
+                DB.closeResultSet(resultSet);
+            } else {
+                throw new DbException("Erro inexperado, nenhuma linha foi afetada");
+            }
+        } catch (SQLException e) {
+            throw new DbException(e.getMessage());
+        } finally {
+            DB.closeStatement(pStatement);
+        }
     }
 
     @Override
